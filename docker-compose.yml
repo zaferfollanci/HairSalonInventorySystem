@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: hsadmin
+      POSTGRES_PASSWORD: strongpassword
+      POSTGRES_DB: hairsalon
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./src/HairSalonInventory.API
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Username=hsadmin;Password=strongpassword;Database=hairsalon
+      - Jwt__Key=SuperSecretKeyForJWT
+      - Jwt__Issuer=HairSalonInventoryApp
+      - Jwt__Audience=HairSalonInventoryAppUsers
+    depends_on:
+      - db
+    ports:
+      - "5000:80"
+
+  blazor:
+    build:
+      context: ./src/HairSalonInventory.Blazor
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ApiBaseUrl=http://api:80
+    depends_on:
+      - api
+    ports:
+      - "5002:80"
+
+volumes:
+  pgdata:
